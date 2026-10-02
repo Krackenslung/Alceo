@@ -1,3 +1,5 @@
+import { useApp } from '../AppContext.jsx';
+
 const ITEMS = [
   { id: 'home', label: 'Home', icon: '⌂' },
   { id: 'workout', label: 'Workout', icon: '▤' },
@@ -7,6 +9,7 @@ const ITEMS = [
 ];
 
 export default function Sidebar({ active, onChange }) {
+  const { generateNextWeek } = useApp();
   return (
     <aside className="sidebar">
       <div className="logo">
@@ -21,14 +24,14 @@ export default function Sidebar({ active, onChange }) {
             onClick={() => onChange(i.id)}
           >
             <span className="nav__icon">{i.icon}</span>
-            {i.label}
+            <span className="nav__label">{i.label}</span>
           </button>
         ))}
       </nav>
-      <div className="sidebar__promo">
+      <button className="sidebar__promo" onClick={generateNextWeek}>
         <p className="promo__title">✦ Generate next week</p>
         <p className="promo__text">Let AI build your plan from this week’s results.</p>
-      </div>
+      </button>
     </aside>
   );
 }

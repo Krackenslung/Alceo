@@ -1,6 +1,6 @@
 import ConditioningBubble from './ConditioningBubble.jsx';
 
-export default function WorkoutHero({ workout, isToday, onModify }) {
+export default function WorkoutHero({ workout, isToday, onModify, onStart }) {
   if (!workout) {
     return (
       <section className="hero hero--rest">
@@ -28,7 +28,7 @@ export default function WorkoutHero({ workout, isToday, onModify }) {
           <span className="tag">Intensity {workout.intensity}/10</span>
         </div>
         <div className="hero__actions">
-          <button className="btn btn--dark">Start workout →</button>
+          <button className="btn btn--dark" onClick={onStart}>Start workout →</button>
           <button className="btn btn--outline" onClick={onModify}>
             Modify
           </button>

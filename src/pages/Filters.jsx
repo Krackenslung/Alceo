@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import Chip from '../components/Chip.jsx';
+import TopActions from '../components/TopActions.jsx';
+import { useApp } from '../AppContext.jsx';
+import { addDays, formatRange, getWeek } from '../utils/dates.js';
 import {
-  DAYS, DEFAULT_FILTERS, INTENSITY_LABELS, LENGTHS, MACHINES, MUSCLES, PRIMARY, SECONDARY,
+  DAYS, DEFAULT_FILTERS, INTENSITY_LABELS, LENGTHS, MUSCLES, PRIMARY, SECONDARY,
 } from '../data/filters.js';
 
 const toggle = (list, item) => (list.includes(item) ? list.filter((x) => x !== item) : [...list, item]);
@@ -10,6 +13,13 @@ export default function Filters({ filters, setFilters }) {
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState('');
   const [applied, setApplied] = useState(false);
+  const [target, setTarget] = useState('next');
+  const [addingMachine, setAddingMachine] = useState(false);
+  const [machineDraft, setMachineDraft] = useState('');
+  const { today, weekStart, generateWeek } = useApp();
+  const targetDate = addDays(today, target === 'next' ? 7 : 0);
+  const targetRange = formatRange(getWeek(targetDate, weekStart));
+  const MACHINES = filters.allMachines;
   const set = (patch) => {
     setApplied(false);
     setFilters((f) => ({ ...f, ...patch }));
@@ -23,6 +33,21 @@ export default function Filters({ filters, setFilters }) {
     setAdding(false);
   };
 
+  const addMachine = (e) => {
+    e.preventDefault();
+    const name = machineDraft.trim();
+    if (name && !MACHINES.some((m) => m.toLowerCase() === name.toLowerCase())) {
+      set({ allMachines: [...MACHINES, name], machines: [...filters.machines, name] });
+    }
+    setMachineDraft('');
+    setAddingMachine(false);
+  };
+
+  const apply = () => {
+    generateWeek(targetDate, { navigate: true });
+    setApplied(true);
+  };
+
   const allSelected = filters.machines.length === MACHINES.length;
   const sports = [filters.primary !== 'None' && filters.primary, filters.secondary].filter(Boolean).join(' + ');
 
@@ -33,17 +58,20 @@ export default function Filters({ filters, setFilters }) {
           <p className="topbar__date">The AI builds your weekly plan from these settings</p>
           <h1 className="topbar__title">Filters</h1>
         </div>
-        <div className="topbar__actions">
-          <button className="icon-btn" aria-label="Settings">⚙</button>
-          <span className="avatar">JM</span>
-        </div>
+        <TopActions />
       </header>
 
       <div className="toolbar">
-        <button className="select">Applies to: <strong>Next week · Oct 5 – 11</strong> ▾</button>
+        <label className="select select--field">
+          Applies to:
+          <select value={target} onChange={(e) => setTarget(e.target.value)}>
+            <option value="next">Next week · {formatRange(getWeek(addDays(today, 7), weekStart))}</option>
+            <option value="this">This week · {formatRange(getWeek(today, weekStart))}</option>
+          </select>
+        </label>
         <div className="toolbar__left">
           <button className="select" onClick={() => { setFilters(DEFAULT_FILTERS); setApplied(false); }}>Reset</button>
-          <button className="btn btn--lime" onClick={() => setApplied(true)}>
+          <button className="btn btn--lime" onClick={apply}>
             {applied ? '✓ Plan generated' : '✦ Apply & generate plan'}
           </button>
         </div>
@@ -137,7 +165,20 @@ export default function Filters({ filters, setFilters }) {
                 );
               })}
             </div>
-            <button className="link link--pad">+ Add machine</button>
+            {addingMachine ? (
+              <form onSubmit={addMachine} className="link--pad">
+                <input
+                  className="avoid__input"
+                  autoFocus
+                  value={machineDraft}
+                  placeholder="Machine name"
+                  onChange={(e) => setMachineDraft(e.target.value)}
+                  onBlur={addMachine}
+                />
+              </form>
+            ) : (
+              <button className="link link--pad" onClick={() => setAddingMachine(true)}>+ Add machine</button>
+            )}
           </section>
 
           <section className="panel">

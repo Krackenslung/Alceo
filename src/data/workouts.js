@@ -48,4 +48,12 @@ export const PAST_SESSIONS = [
   { id: 'b', date: 'Fri, Sep 18', short: 'Fri, Sep 18', info: '44 min · 9,480 kg', badge: '2 weeks ago', delta: '+6%', volume: '9,480 kg', done: '6/6', effort: 7, note: 'steady session' },
   { id: 'c', date: 'Sat, Sep 12', short: 'Sat, Sep 12', info: '50 min · 8,950 kg', badge: '3 weeks ago', delta: '−2%', volume: '8,950 kg', done: '5/6', effort: 8, note: 'skipped calf raises' },
   { id: 'd', date: 'Fri, Sep 5', short: 'Fri, Sep 5', info: '53 min · 8,120 kg', badge: '4 weeks ago', delta: '—', volume: '8,120 kg', done: '6/6', effort: 7, note: 'first week back' },
+  { id: 'e', date: 'Fri, Aug 29', short: 'Fri, Aug 29', info: '49 min · 7,800 kg', badge: '5 weeks ago', delta: '+3%', volume: '7,800 kg', done: '6/6', effort: 7, note: 'felt strong' },
+  { id: 'f', date: 'Fri, Aug 22', short: 'Fri, Aug 22', info: '46 min · 7,570 kg', badge: '6 weeks ago', delta: '+1%', volume: '7,570 kg', done: '6/6', effort: 6, note: 'light day' },
+];
+
+export const SEED_HISTORY = [
+  { id: 'h1', name: 'Upper Body Strength', date: 'Thu, Sep 24', duration: '52 min', volume: '8,420 kg', effort: '8/10' },
+  { id: 'h2', name: 'Agility & Conditioning', date: 'Tue, Sep 22', duration: '38 min', volume: '5 drills', effort: '7/10' },
+  { id: 'h3', name: 'Full Body Mobility', date: 'Mon, Sep 21', duration: '25 min', volume: '—', effort: '4/10' },
 ];

@@ -1,11 +1,27 @@
 import { useState } from 'react';
+import TopActions from '../components/TopActions.jsx';
 import { PROGRESS, RANGES, RECORDS, STRENGTH } from '../data/progress.js';
+import { downloadFile, toCsv } from '../store.js';
 
 export default function Progress() {
   const [rangeId, setRangeId] = useState('12w');
+  const [allRecords, setAllRecords] = useState(false);
+  const [exercise, setExercise] = useState('All');
   const range = RANGES.find((r) => r.id === rangeId);
   const data = PROGRESS[rangeId];
   const max = Math.max(...data.volume.map((b) => b.value));
+  const strengthRows = exercise === 'All' ? STRENGTH : STRENGTH.filter((r) => r[0] === exercise);
+
+  const exportReport = () => {
+    const rows = [
+      ['Section', 'Item', 'Value', 'Detail'],
+      ...data.stats.map(([l, v, d]) => ['Summary', l, v, d]),
+      ...data.volume.map((b) => ['Volume', b.label, b.value, 'kg']),
+      ...STRENGTH.map(([n, a, b, c]) => ['Strength', n, `${a} -> ${b}`, c]),
+      ...data.muscles.map(([n, p]) => ['Muscle balance', n, `${p}%`, '']),
+    ];
+    downloadFile(`alceo-progress-${rangeId}.csv`, toCsv(rows));
+  };
 
   return (
     <main className="main">
@@ -14,10 +30,7 @@ export default function Progress() {
           <p className="topbar__date">Your training over time</p>
           <h1 className="topbar__title">Progress</h1>
         </div>
-        <div className="topbar__actions">
-          <button className="icon-btn" aria-label="Settings">⚙</button>
-          <span className="avatar">JM</span>
-        </div>
+        <TopActions />
       </header>
 
       <div className="toolbar">
@@ -32,7 +45,7 @@ export default function Progress() {
             </button>
           ))}
         </div>
-        <button className="select">Export report</button>
+        <button className="select" onClick={exportReport}>Export report</button>
       </div>
 
       <div className="kpis">
@@ -52,7 +65,7 @@ export default function Progress() {
               <h3 className="panel__title">Weekly volume</h3>
               <p className="panel__sub">Total kg lifted per {rangeId.endsWith('w') ? 'week' : 'month'}</p>
             </div>
-            <button className="link">Volume ▾</button>
+            <span className="muted">kg</span>
           </div>
           <div className="bars bars--tall">
             {data.volume.map((b, i) => (
@@ -71,10 +84,10 @@ export default function Progress() {
         <section className="panel">
           <div className="panel__head">
             <h3 className="panel__title">Personal records</h3>
-            <button className="link">See all</button>
+            <button className="link" onClick={() => setAllRecords((a) => !a)}>{allRecords ? 'Show less' : 'See all'}</button>
           </div>
           <ul className="records">
-            {RECORDS.map(([name, date, result]) => (
+            {(allRecords ? RECORDS : RECORDS.slice(0, 5)).map(([name, date, result]) => (
               <li key={name}>
                 <span className="records__star">★</span>
                 <div>
@@ -93,14 +106,17 @@ export default function Progress() {
               <h3 className="panel__title">Strength by exercise</h3>
               <p className="panel__sub">Best set, start of period → now</p>
             </div>
-            <button className="link">Exercise ▾</button>
+            <select className="select" aria-label="Exercise" value={exercise} onChange={(e) => setExercise(e.target.value)}>
+              <option>All</option>
+              {STRENGTH.map((r) => <option key={r[0]}>{r[0]}</option>)}
+            </select>
           </div>
           <table className="table">
             <thead>
               <tr><th>Exercise</th><th>{range.period}</th><th>Now</th><th>Change</th></tr>
             </thead>
             <tbody>
-              {STRENGTH.map(([name, then, now, change]) => (
+              {strengthRows.map(([name, then, now, change]) => (
                 <tr key={name}>
                   <td className="strong">{name}</td>
                   <td className="muted">{then}</td>

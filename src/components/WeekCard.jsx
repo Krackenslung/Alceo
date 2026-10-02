@@ -1,24 +1,26 @@
-import { getWeek, isSameDay } from '../utils/dates.js';
-
-const LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+import { useApp } from '../AppContext.jsx';
+import { DAY_LETTER, getWeek, isSameDay, ymd } from '../utils/dates.js';
 
 export default function WeekCard({ today, selectedDate, onSelect }) {
-  const week = getWeek(today);
-  const done = week.filter((d) => d < today && !isSameDay(d, today) && d.getDay() !== 0).length;
-  const planned = week.filter((d) => d.getDay() !== 0).length;
+  const { weekStart, resolve, history } = useApp();
+  const week = getWeek(today, weekStart);
+  const completed = new Set(history.map((h) => h.dateKey).filter(Boolean));
+  const planned = week.filter((d) => resolve(d));
+  const isDone = (d) => resolve(d) && (completed.has(ymd(d)) || (d < today && !isSameDay(d, today)));
+  const done = planned.filter(isDone).length;
 
   return (
     <section className="panel">
       <h3 className="panel__title">This week</h3>
-      <p className="panel__sub">{done} of {planned} sessions done</p>
+      <p className="panel__sub">{done} of {planned.length} sessions done</p>
       <div className="week">
-        {week.map((d, i) => {
+        {week.map((d) => {
           const isToday = isSameDay(d, today);
           const selected = isSameDay(d, selectedDate);
-          const complete = d < today && !isToday && d.getDay() !== 0;
+          const complete = isDone(d);
           return (
             <div key={d.toISOString()} className="week__col">
-              <span className="week__letter">{LETTERS[i]}</span>
+              <span className="week__letter">{DAY_LETTER[d.getDay()]}</span>
               <button
                 className={`dot${complete ? ' dot--done' : ''}${isToday ? ' dot--today' : ''}${selected ? ' dot--selected' : ''}`}
                 onClick={() => onSelect(d)}

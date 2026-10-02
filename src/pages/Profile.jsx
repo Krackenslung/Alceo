@@ -1,6 +1,10 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import Avatar from '../components/Avatar.jsx';
 import Segmented from '../components/Segmented.jsx';
 import Switch from '../components/Switch.jsx';
+import TopActions from '../components/TopActions.jsx';
+import { useApp } from '../AppContext.jsx';
+import { downloadFile, toCsv } from '../store.js';
 
 const KG_TO_LB = 2.20462;
 const CM_TO_IN = 1 / 2.54;
@@ -24,8 +28,14 @@ function Field({ label, children }) {
   );
 }
 
+const WEIGHT_HISTORY = [['Sep 28', 76.5], ['Sep 14', 76.9], ['Aug 31', 77.4], ['Aug 17', 77.8]];
+
 export default function Profile({ profile, setProfile, filters }) {
   const { info, prefs } = profile;
+  const { history, setPhoto, signOut, deleteAccount, toast } = useApp();
+  const fileRef = useRef(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [pw, setPw] = useState(null); // null = closed, otherwise { next, confirm, error }
   const [draft, setDraft] = useState(info);
   const [saved, setSaved] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -51,7 +61,6 @@ export default function Profile({ profile, setProfile, filters }) {
   };
 
   const kg = prefs.units === 'kg';
-  const initials = `${info.first[0] ?? ''}${info.last[0] ?? ''}`.toUpperCase();
   const sport = [filters.primary !== 'None' && filters.primary, filters.secondary].filter(Boolean).join(' + ');
 
   return (
@@ -61,14 +70,11 @@ export default function Profile({ profile, setProfile, filters }) {
           <p className="topbar__date">Your account and body data</p>
           <h1 className="topbar__title">Profile</h1>
         </div>
-        <div className="topbar__actions">
-          <button className="icon-btn" aria-label="Settings">⚙</button>
-          <span className="avatar">{initials}</span>
-        </div>
+        <TopActions />
       </header>
 
       <section className="panel hero-profile">
-        <span className="avatar avatar--lg">{initials}</span>
+        <Avatar large />
         <div className="hero-profile__info">
           <h2>{info.first} {info.last}</h2>
           <p className="muted">{info.email} · Member since Sep 2026</p>
@@ -78,11 +84,25 @@ export default function Profile({ profile, setProfile, filters }) {
           </div>
         </div>
         <div className="hero-profile__stats">
-          {[['38', 'Sessions'], ['9', 'PRs'], ['4', 'Day streak']].map(([v, l]) => (
+          {[[String(38 + Math.max(0, history.length - 3)), 'Sessions'], ['9', 'PRs'], ['4', 'Day streak']].map(([v, l]) => (
             <div key={l}><strong>{v}</strong><span className="muted">{l}</span></div>
           ))}
         </div>
-        <button className="select">Change photo</button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => setPhoto(String(reader.result));
+            reader.readAsDataURL(file);
+            e.target.value = '';
+          }}
+        />
+        <button className="select" onClick={() => fileRef.current?.click()}>Change photo</button>
       </section>
 
       <div className="filters">
@@ -118,7 +138,7 @@ export default function Profile({ profile, setProfile, filters }) {
                 <h3 className="panel__title">Body metrics</h3>
                 <p className="panel__sub">Used to size weights and track progress</p>
               </div>
-              <button className="link">History</button>
+              <button className="link" onClick={() => setShowHistory((h) => !h)}>{showHistory ? 'Hide' : 'History'}</button>
             </div>
             <div className="pgrid">
               <Field label="Height">
@@ -145,6 +165,13 @@ export default function Profile({ profile, setProfile, filters }) {
                 </div>
               </Field>
             </div>
+            {showHistory && (
+              <ul className="whist">
+                {WEIGHT_HISTORY.map(([d, w]) => (
+                  <li key={d}><span className="muted">{d}</span><span>{kg ? w : round1(w * KG_TO_LB)} {prefs.units}</span></li>
+                ))}
+              </ul>
+            )}
             <div className="save">
               <button className="btn btn--lime" disabled={!dirty} onClick={save}>
                 {saved && !dirty ? '✓ Saved' : 'Save changes'}
@@ -185,15 +212,43 @@ export default function Profile({ profile, setProfile, filters }) {
             <ul className="prefs">
               <li>
                 <div><strong>Password</strong><p className="muted">Last changed 2 weeks ago</p></div>
-                <button className="link">Change</button>
+                <button className="link" onClick={() => setPw(pw ? null : { next: '', confirm: '', error: '' })}>
+                  {pw ? 'Cancel' : 'Change'}
+                </button>
               </li>
+              {pw && (
+                <li className="prefs__form">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (pw.next.length < 8) return setPw({ ...pw, error: 'Use at least 8 characters.' });
+                      if (pw.next !== pw.confirm) return setPw({ ...pw, error: 'Passwords do not match.' });
+                      setPw(null);
+                      toast('Password updated');
+                    }}
+                  >
+                    <input type="password" placeholder="New password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value, error: '' })} />
+                    <input type="password" placeholder="Confirm password" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value, error: '' })} />
+                    {pw.error && <p className="neg">{pw.error}</p>}
+                    <button className="btn btn--lime" type="submit">Update password</button>
+                  </form>
+                </li>
+              )}
               <li>
                 <div><strong>Export my data</strong><p className="muted">Download all workouts as CSV</p></div>
-                <button className="link">Export</button>
+                <button
+                  className="link"
+                  onClick={() => downloadFile('alceo-workouts.csv', toCsv([
+                    ['Session', 'Date', 'Duration', 'Volume', 'Effort'],
+                    ...history.map((h) => [h.name, h.date, h.duration, h.volume, h.effort]),
+                  ]))}
+                >
+                  Export
+                </button>
               </li>
               <li>
                 <div><strong>Sign out</strong></div>
-                <button className="select">Sign out</button>
+                <button className="select" onClick={signOut}>Sign out</button>
               </li>
               <li>
                 <div>
@@ -205,7 +260,7 @@ export default function Profile({ profile, setProfile, filters }) {
                 {confirmDelete ? (
                   <div className="confirm">
                     <button className="select" onClick={() => setConfirmDelete(false)}>Cancel</button>
-                    <button className="btn-danger">Confirm</button>
+                    <button className="btn-danger" onClick={deleteAccount}>Confirm</button>
                   </div>
                 ) : (
                   <button className="btn-danger" onClick={() => setConfirmDelete(true)}>Delete</button>

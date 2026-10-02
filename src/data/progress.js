@@ -57,6 +57,9 @@ export const RECORDS = [
   ['Bench press', 'Sep 24', '70 kg × 6'],
   ['Pull-ups', 'Sep 17', 'BW + 10 kg × 5'],
   ['5 km run', 'Sep 12', '24:10'],
+  ['Barbell row', 'Sep 10', '60 kg × 8'],
+  ['Overhead press', 'Sep 3', '42.5 kg × 5'],
+  ['Romanian deadlift', 'Aug 29', '80 kg × 8'],
 ];
 
 export const STRENGTH = [

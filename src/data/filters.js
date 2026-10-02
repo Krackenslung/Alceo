@@ -19,4 +19,5 @@ export const DEFAULT_FILTERS = {
   muscles: ['Legs', 'Glutes', 'Core'],
   machines: MACHINES.filter((m) => m !== 'Cable machine' && m !== 'Kettlebells'),
   avoid: ['Conventional deadlift', 'Overhead press'],
+  allMachines: MACHINES,
 };

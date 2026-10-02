@@ -3,6 +3,7 @@ import { PAST_SESSIONS } from '../data/workouts.js';
 
 export default function PastSessions({ workout }) {
   const [activeId, setActiveId] = useState(PAST_SESSIONS[0].id);
+  const [visible, setVisible] = useState(4);
   const active = PAST_SESSIONS.find((s) => s.id === activeId);
 
   return (
@@ -13,14 +14,14 @@ export default function PastSessions({ workout }) {
           <p className="panel__sub">Sessions with the same workout name · newest first</p>
         </div>
         <div className="past__filters">
-          <button className="select">Workout: {workout.name} ▾</button>
-          <button className="select">Last 8 weeks ▾</button>
+          <span className="select select--static">Workout: {workout.name}</span>
+          <span className="select select--static">Last 8 weeks</span>
         </div>
       </div>
 
       <div className="past__body">
         <div className="past__list">
-          {PAST_SESSIONS.map((s) => (
+          {PAST_SESSIONS.slice(0, visible).map((s) => (
             <button
               key={s.id}
               className={`past__item${s.id === activeId ? ' past__item--active' : ''}`}
@@ -38,7 +39,9 @@ export default function PastSessions({ workout }) {
               </div>
             </button>
           ))}
-          <button className="link past__more">Load older sessions</button>
+          {visible < PAST_SESSIONS.length && (
+            <button className="link past__more" onClick={() => setVisible(PAST_SESSIONS.length)}>Load older sessions</button>
+          )}
         </div>
 
         <div className="past__detail">
