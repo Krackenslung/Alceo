@@ -1,63 +1,33 @@
 // Placeholder data keyed by day of week (0 = Sunday). Replace with API data later.
+const w = (name, conditioning, description, intensity, warmup, main) => ({
+  name,
+  conditioning,
+  description,
+  intensity,
+  warmup,
+  main,
+});
+
 export const WORKOUTS = {
   0: null,
-  1: {
-    name: 'Chest Day',
-    conditioning: 'Hypertrophy',
-    exercises: [
-      { name: 'Barbell Bench Press', sets: 4, reps: '8-10' },
-      { name: 'Incline Dumbbell Press', sets: 3, reps: '10-12' },
-      { name: 'Cable Fly', sets: 3, reps: '12-15' },
-      { name: 'Triceps Pushdown', sets: 3, reps: '12-15' },
-    ],
-  },
-  2: {
-    name: 'Back Day',
-    conditioning: 'Strength',
-    exercises: [
-      { name: 'Deadlift', sets: 4, reps: '5' },
-      { name: 'Pull-Up', sets: 4, reps: '6-8' },
-      { name: 'Barbell Row', sets: 3, reps: '8' },
-      { name: 'Face Pull', sets: 3, reps: '15' },
-    ],
-  },
-  3: {
-    name: 'Leg Day',
-    conditioning: 'Hypertrophy',
-    exercises: [
-      { name: 'Back Squat', sets: 4, reps: '8-10' },
-      { name: 'Romanian Deadlift', sets: 3, reps: '10' },
-      { name: 'Leg Press', sets: 3, reps: '12' },
-      { name: 'Calf Raise', sets: 4, reps: '15' },
-    ],
-  },
-  4: {
-    name: 'Shoulder Day',
-    conditioning: 'Endurance',
-    exercises: [
-      { name: 'Overhead Press', sets: 4, reps: '8' },
-      { name: 'Lateral Raise', sets: 4, reps: '15' },
-      { name: 'Rear Delt Fly', sets: 3, reps: '15' },
-    ],
-  },
-  5: {
-    name: 'Arm Day',
-    conditioning: 'Hypertrophy',
-    exercises: [
-      { name: 'Barbell Curl', sets: 4, reps: '10' },
-      { name: 'Skull Crusher', sets: 4, reps: '10' },
-      { name: 'Hammer Curl', sets: 3, reps: '12' },
-    ],
-  },
-  6: {
-    name: 'Full Body',
-    conditioning: 'Power',
-    exercises: [
-      { name: 'Power Clean', sets: 5, reps: '3' },
-      { name: 'Front Squat', sets: 4, reps: '5' },
-      { name: 'Push Press', sets: 4, reps: '5' },
-    ],
-  },
+  1: w('Chest Day', 'Hypertrophy', 'Heavy pressing volume to build chest, shoulders and triceps.', 7,
+    [['Arm circles', '2 × 15'], ['Band pull-aparts', '2 × 15'], ['Push-ups', '2 × 10']],
+    [['Bench press', '4 × 8'], ['Incline DB press', '3 × 10'], ['Cable fly', '3 × 12'], ['Triceps pushdown', '3 × 12']]),
+  2: w('Back Day', 'Strength', 'Heavy pulling work for a stronger, thicker back.', 8,
+    [['Cat-cow', '2 × 10'], ['Band rows', '2 × 15'], ['Hip hinge', '2 × 10']],
+    [['Deadlift', '4 × 5'], ['Pull-ups', '4 × 6'], ['Barbell row', '3 × 8'], ['Face pull', '3 × 15']]),
+  3: w('Leg Day', 'Hypertrophy', 'Builds quad and glute size with high-volume lower body work.', 8,
+    [['Leg swings', '2 × 10 each side'], ['Hip openers', '90 sec'], ['Bodyweight squats', '2 × 12']],
+    [['Back squat', '4 × 8'], ['Romanian deadlift', '3 × 10'], ['Leg press', '3 × 12'], ['Calf raise', '4 × 15']]),
+  4: w('Shoulder Day', 'Endurance', 'Higher-rep shoulder work for stability and capacity.', 6,
+    [['Arm circles', '2 × 15'], ['Band dislocates', '2 × 10'], ['Scap push-ups', '2 × 10']],
+    [['Overhead press', '4 × 8'], ['Lateral raise', '4 × 15'], ['Rear delt fly', '3 × 15']]),
+  5: w('Lower Body Power', 'Power', 'Builds sprint and jump power for soccer, using only the machines at your gym.', 7,
+    [['Leg swings', '2 × 10 each side'], ['Hip openers', '90 sec'], ['Bodyweight squats', '2 × 12'], ['A-skips', '2 × 20 m']],
+    [['Back squat', '4 × 6'], ['Leg press', '3 × 10'], ['Bulgarian split squat', '3 × 8'], ['Box jumps', '4 × 5'], ['Hamstring curl', '3 × 10'], ['Calf raise', '3 × 15']]),
+  6: w('Full Body', 'Power', 'Explosive full body session to finish the week.', 7,
+    [['Jumping jacks', '2 × 20'], ['World’s greatest stretch', '2 × 6'], ['Goblet squat', '2 × 10']],
+    [['Power clean', '5 × 3'], ['Front squat', '4 × 5'], ['Push press', '4 × 5']]),
 };
 
 export const getWorkoutForDate = (date) => WORKOUTS[date.getDay()];

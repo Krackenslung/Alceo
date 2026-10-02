@@ -6,33 +6,34 @@ export default function Workout({ date }) {
   const workout = getWorkoutForDate(date);
 
   return (
-    <main className="page">
-      <header className="page__header">
-        <h1>Workout</h1>
-        <p className="page__sub">{formatLong(date)}</p>
+    <main className="main">
+      <header className="topbar">
+        <div>
+          <p className="topbar__date">{formatLong(date)}</p>
+          <h1 className="topbar__title">Workout</h1>
+        </div>
       </header>
 
       {workout ? (
-        <section className="card">
-          <div className="card__row">
-            <h3 className="card__title">{workout.name}</h3>
+        <section className="panel workout">
+          <div className="workout__head">
+            <h2 className="workout__name">{workout.name}</h2>
             <ConditioningBubble>{workout.conditioning}</ConditioningBubble>
           </div>
-          <ul className="exercises">
-            {workout.exercises.map((e) => (
-              <li key={e.name} className="exercises__item">
-                <span>{e.name}</span>
-                <span className="exercises__sets">
-                  {e.sets} × {e.reps}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <p className="panel__sub">{workout.description}</p>
+          {[['Warm-up', workout.warmup], ['Main', workout.main]].map(([label, rows]) => (
+            <div key={label}>
+              <h4 className="workout__section">{label}</h4>
+              <ul className="rows">
+                {rows.map(([n, s]) => (
+                  <li key={n}><span>{n}</span><span>{s}</span></li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </section>
       ) : (
-        <section className="card">
-          <p className="card__meta">Rest day</p>
-        </section>
+        <section className="panel"><p className="panel__sub">Rest day</p></section>
       )}
     </main>
   );

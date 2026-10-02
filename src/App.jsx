@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Home from './pages/Home.jsx';
 import Workout from './pages/Workout.jsx';
-import TabBar from './components/TabBar.jsx';
+import Sidebar from './components/Sidebar.jsx';
 
 export default function App() {
   const [today] = useState(() => new Date());
@@ -16,17 +16,17 @@ export default function App() {
 
   return (
     <div className="app">
-      {tab === 'home' ? (
+      <Sidebar active={tab} onChange={setTab} />
+      {tab === 'workout' ? (
+        <Workout date={selectedDate} />
+      ) : (
         <Home
           today={today}
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}
           onModify={handleModify}
         />
-      ) : (
-        <Workout date={selectedDate} />
       )}
-      <TabBar active={tab} onChange={setTab} />
     </div>
   );
 }
