@@ -158,7 +158,25 @@ ul { padding: 0; list-style: none; }
 .past__totals div { display: flex; flex-direction: column; align-items: flex-end; font-size: 11px; }
 .past__totals strong { font-size: 15px; }
 
+/* Progress page */
+.select--active { background: var(--lime); border-color: var(--lime); color: var(--lime-ink); font-weight: 600; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
+.kpi { padding: 14px; }
+.kpi__value { font-size: 22px; font-weight: 700; margin: 6px 0 4px; }
+.kpi__delta { font-size: 11px; }
+.grid--progress { grid-template-columns: minmax(0, 1fr) 320px; }
+.bars--tall { height: 190px; }
+.records li { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 10px; padding: 10px 0; font-size: 12px; }
+.records p { font-size: 11px; }
+.records__star { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--panel-2); color: var(--lime); font-size: 11px; }
+.muscles { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+.muscles__row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; }
+.muscles__track { height: 6px; border-radius: 3px; background: var(--panel-2); }
+.muscles__fill { height: 100%; border-radius: 3px; background: var(--lime); }
+
 @media (max-width: 960px) {
+  .kpis { grid-template-columns: 1fr 1fr; }
+  .grid--progress { grid-template-columns: 1fr; }
   .daycards { grid-template-columns: repeat(4, 1fr); }
   .past__body { grid-template-columns: 1fr; }
   .app { grid-template-columns: 1fr; }

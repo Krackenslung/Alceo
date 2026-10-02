@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Home from './pages/Home.jsx';
 import Workout from './pages/Workout.jsx';
+import Progress from './pages/Progress.jsx';
 import Sidebar from './components/Sidebar.jsx';
 
 export default function App() {
@@ -17,7 +18,9 @@ export default function App() {
   return (
     <div className="app">
       <Sidebar active={tab} onChange={setTab} />
-      {tab === 'workout' ? (
+      {tab === 'progress' ? (
+        <Progress />
+      ) : tab === 'workout' ? (
         <Workout today={today} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
       ) : (
         <Home
