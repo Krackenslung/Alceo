@@ -13,7 +13,7 @@ class Config:
     SECRET_KEY: str = os.environ.get("SECRET_KEY", "")
     DATABASE_URL: str = os.environ.get("DATABASE_URL", "")
     GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "")
-    GEMINI_MODEL: str = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+    GEMINI_MODEL: str = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
     GOOGLE_CLIENT_ID: str = os.environ.get("GOOGLE_CLIENT_ID", "")
     CORS_ORIGINS: list[str] = _list(os.environ.get("CORS_ORIGINS", "http://localhost:5173"))
     TOKEN_MAX_AGE_SECONDS: int = int(os.environ.get("TOKEN_MAX_AGE_SECONDS", "604800"))

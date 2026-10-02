@@ -12,7 +12,17 @@ class Base(DeclarativeBase):
 SessionLocal = sessionmaker(expire_on_commit=False)
 
 
+def normalize_db_url(url: str) -> str:
+    """Neon hands out postgresql:// URLs; force the psycopg (v3) driver."""
+    url = url.strip()
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix):]
+    return url
+
+
 def init_db(url: str) -> Engine:
+    url = normalize_db_url(url)
     if url.startswith("sqlite"):
         engine = create_engine(url)
 

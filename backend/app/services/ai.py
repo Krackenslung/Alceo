@@ -204,7 +204,7 @@ def generate_workout(
     except Exception as exc:
         session.rollback()
         logger.warning("AI query %s failed: %s", query.id, exc)
-        message = str(exc) if isinstance(exc, (AiResponseError, ApiError)) else f"AI call failed: {type(exc).__name__}"
+        message = str(exc) if isinstance(exc, (AiResponseError, ApiError)) else f"AI call failed: {type(exc).__name__}: {exc}"
         query.status = "error"
         query.error_message = message[:500]
         query.response = None

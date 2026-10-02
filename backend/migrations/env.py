@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, pool
 
 import app.models  # noqa: F401  (registers every table on Base.metadata)
-from app.db import Base
+from app.db import Base, normalize_db_url
 
 load_dotenv()
 
@@ -22,7 +22,7 @@ def database_url() -> str:
     url = os.environ.get("DATABASE_URL_DIRECT") or os.environ.get("DATABASE_URL")
     if not url:
         raise RuntimeError("Set DATABASE_URL_DIRECT (or DATABASE_URL) in .env before running Alembic.")
-    return url
+    return normalize_db_url(url)
 
 
 def run_migrations_offline() -> None:
