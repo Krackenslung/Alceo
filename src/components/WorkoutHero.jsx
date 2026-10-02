@@ -21,7 +21,7 @@ export default function WorkoutHero({ workout, isToday, onModify }) {
         </div>
         <p className="hero__desc">{workout.description}</p>
         <div className="hero__tags">
-          <span className="tag">55 min</span>
+          <span className="tag">{workout.duration} min</span>
           <span className="tag">
             Warm-up + {workout.main.length} exercises
           </span>
@@ -37,14 +37,14 @@ export default function WorkoutHero({ workout, isToday, onModify }) {
       <div className="hero__list">
         <h4>WARM-UP · 8 min</h4>
         <ul>
-          {workout.warmup.map(([n, s]) => (
-            <li key={n}><span>{n}</span><span>{s}</span></li>
+          {workout.warmup.map((e) => (
+            <li key={e.name}><span>{e.name}</span><span>{e.sets}</span></li>
           ))}
         </ul>
         <h4>MAIN · {workout.main.length} exercises</h4>
         <ul>
-          {workout.main.map(([n, s]) => (
-            <li key={n}><span>{n}</span><span>{s}</span></li>
+          {workout.main.map((e) => (
+            <li key={e.name}><span>{e.name}</span><span>{e.sets}</span></li>
           ))}
         </ul>
       </div>

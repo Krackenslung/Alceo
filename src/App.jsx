@@ -18,7 +18,7 @@ export default function App() {
     <div className="app">
       <Sidebar active={tab} onChange={setTab} />
       {tab === 'workout' ? (
-        <Workout date={selectedDate} />
+        <Workout today={today} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
       ) : (
         <Home
           today={today}

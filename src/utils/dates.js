@@ -21,3 +21,12 @@ export const greeting = (date) => {
   const h = date.getHours();
   return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
 };
+
+export const DAY_ABBR = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+export const formatShort = (date, withWeekday = false) =>
+  date.toLocaleDateString('en-US', {
+    ...(withWeekday ? { weekday: 'long' } : {}),
+    month: 'short',
+    day: 'numeric',
+  });
