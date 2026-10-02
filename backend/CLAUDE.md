@@ -9,7 +9,7 @@ School project, due **October 15, 2026**. Favor working, simple code over abstra
 - Python 3.12, Flask (app factory + blueprints)
 - SQLAlchemy 2.0 (typed `Mapped[...]` models) + Alembic for migrations
 - Postgres 18 on Neon, project **"Workout Log"**, driver `psycopg` (v3)
-- Gemini API for workout generation (`google-genai`), default model `gemini-2.5-flash`
+- Gemini API for workout generation (`google-genai`), default model `gemini-3.1-flash-lite` (the non-lite `-flash` models share a 20-requests/day free-tier quota that exhausts fast)
 - Passwords hashed with argon2 (`argon2-cffi`); Google sign-in supported
 - pytest for tests
 

@@ -27,7 +27,7 @@ def _fake_client(monkeypatch, outcomes: list) -> list:
 
 
 def test_retries_on_overload_then_succeeds(monkeypatch) -> None:
-    calls = _fake_client(monkeypatch, [_error(503), _error(429), '{"ok": true}'])
+    calls = _fake_client(monkeypatch, [_error(503), _error(500), '{"ok": true}'])
     slept: list[float] = []
     assert ai_service.call_gemini("s", "u", "m", "k", sleep=slept.append) == '{"ok": true}'
     assert len(calls) == 3
@@ -46,3 +46,16 @@ def test_does_not_retry_client_errors(monkeypatch) -> None:
     with pytest.raises(errors.APIError):
         ai_service.call_gemini("s", "u", "m", "k", sleep=lambda _s: None)
     assert len(calls) == 1
+
+
+def test_rate_limit_fails_immediately_with_googles_own_message(monkeypatch) -> None:
+    quota_error = errors.APIError(
+        429,
+        {"error": {"code": 429, "status": "RESOURCE_EXHAUSTED", "message": "Quota exceeded. Please retry in 24m53s."}},
+    )
+    calls = _fake_client(monkeypatch, [quota_error])
+    slept: list[float] = []
+    with pytest.raises(AiResponseError, match="retry in 24m53s"):
+        ai_service.call_gemini("s", "u", "m", "k", sleep=slept.append)
+    assert len(calls) == 1
+    assert slept == []

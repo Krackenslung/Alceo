@@ -25,7 +25,10 @@ ModelCaller = Callable[[str, str, str, str], str]
 RECENT_WORKOUTS = 5
 
 
-RETRYABLE_STATUS = {429, 500, 503}
+# 500/503 are transient server overload, worth a quick retry. 429 is a rate or quota
+# limit: Google's own message already states when it resets (seconds to tens of
+# minutes), so retrying it immediately just wastes the attempt.
+RETRYABLE_STATUS = {500, 503}
 RETRY_DELAYS_SECONDS = (2, 5)
 
 
@@ -48,6 +51,8 @@ def call_gemini(
             )
             break
         except errors.APIError as exc:
+            if exc.code == 429:
+                raise AiResponseError((exc.message or "Gemini rate or quota limit reached.")[:500]) from exc
             if exc.code not in RETRYABLE_STATUS:
                 raise
             if attempt == len(RETRY_DELAYS_SECONDS):
