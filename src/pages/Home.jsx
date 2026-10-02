@@ -3,95 +3,129 @@ import WorkoutHero from '../components/WorkoutHero.jsx';
 import WeekCard from '../components/WeekCard.jsx';
 import TopActions from '../components/TopActions.jsx';
 import { useApp } from '../AppContext.jsx';
-import { formatLong, greeting, isSameDay } from '../utils/dates.js';
+import { EQUIPMENT_LABEL } from '../data/filters.js';
+import {
+  avgRpe, durationMinutes, toDate, trainingStreak, weeklyVolume, workoutName, workoutVolume,
+} from '../lib/workouts.js';
+import { fmtVolume } from '../lib/units.js';
+import { formatCompact, formatLong, greeting } from '../utils/dates.js';
 
-const VOLUME = [55, 62, 48, 70, 66, 100];
-
-export default function Home({ today, selectedDate, onSelectDate, onModify }) {
-  const { resolve, history, filters, profile, go, startSession } = useApp();
+export default function Home() {
+  const {
+    today, user, units, weekStart, history, filters, nextWorkout, go, selectWorkout, startWorkout, generate, generating,
+  } = useApp();
   const [showAll, setShowAll] = useState(false);
-  const workout = resolve(selectedDate);
-  const sessions = showAll ? history : history.slice(0, 3);
-  const sport = filters.primary !== 'None' ? filters.primary : 'No sport';
+  const sessions = showAll ? history : history.slice(0, 5);
+  const firstName = user.name.split(/\s+/)[0];
+
+  const weeks = weeklyVolume(history, today, weekStart, 6);
+  const max = Math.max(1, ...weeks.map((w) => w.value));
+  const [prev, cur] = weeks.slice(-2).map((w) => w.value);
+  const change = prev > 0 ? Math.round(((cur - prev) / prev) * 100) : null;
+  const streak = trainingStreak(history, today);
+
+  const equipment = filters.equipment.length
+    ? filters.equipment.map((e) => EQUIPMENT_LABEL[e] ?? e).join(', ')
+    : 'Any equipment';
 
   return (
     <main className="main">
       <header className="topbar">
         <div>
           <p className="topbar__date">{formatLong(today)}</p>
-          <h1 className="topbar__title">{greeting(today)}, {profile.info.first} — ready to train?</h1>
+          <h1 className="topbar__title">{greeting(today)}, {firstName} — ready to train?</h1>
         </div>
         <TopActions />
       </header>
 
       <div className="grid">
         <WorkoutHero
-          workout={workout}
-          isToday={isSameDay(selectedDate, today)}
-          onModify={() => onModify(selectedDate)}
-          onStart={startSession}
+          workout={nextWorkout}
+          units={units}
+          generating={generating}
+          onGenerate={() => generate({ navigate: true })}
+          onStart={() => startWorkout(nextWorkout)}
+          onModify={() => { if (nextWorkout) selectWorkout(nextWorkout.id); go('workout'); }}
         />
 
         <div className="col-right">
           <section className="panel">
             <div className="panel__head">
-              <h3 className="panel__title">This week’s focus</h3>
+              <h3 className="panel__title">Your focus</h3>
               <button className="link" onClick={() => go('filters')}>Edit</button>
             </div>
             <div className="pills">
-              <span className="pill pill--accent">● Primary · {sport}</span>
-              <span className="pill">Secondary · {filters.secondary}</span>
-              <span className="pill">My gym · {filters.machines.length} machines</span>
+              <span className="pill pill--accent">● Sport · {filters.sport === 'None' ? 'None' : filters.sport}</span>
+              {filters.focus && <span className="pill">Focus · {filters.focus}</span>}
+              <span className="pill">Equipment · {equipment}</span>
+              {filters.injuries.length > 0 && (
+                <span className="pill">{filters.injuries.length} injur{filters.injuries.length === 1 ? 'y' : 'ies'} to respect</span>
+              )}
             </div>
           </section>
-          <WeekCard today={today} selectedDate={selectedDate} onSelect={onSelectDate} />
+          <WeekCard />
         </div>
 
         <section className="panel sessions">
           <div className="panel__head">
             <h3 className="panel__title">Recent sessions</h3>
-            {history.length > 3 && (
+            {history.length > 5 && (
               <button className="link" onClick={() => setShowAll((s) => !s)}>{showAll ? 'Show less' : 'See all'}</button>
             )}
           </div>
-          <table>
-            <thead>
-              <tr><th>Session</th><th>Date</th><th>Duration</th><th>Volume</th><th>Effort</th></tr>
-            </thead>
-            <tbody>
-              {sessions.map((r) => (
-                <tr key={r.id}>
-                  <td className="strong">{r.name}</td>
-                  <td>{r.date}</td>
-                  <td>{r.duration}</td>
-                  <td>{r.volume}</td>
-                  <td>{r.effort}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {history.length === 0 ? (
+            <p className="panel__sub">No completed sessions yet. Finish a workout and it shows up here.</p>
+          ) : (
+            <table>
+              <thead>
+                <tr><th>Session</th><th>Date</th><th>Duration</th><th>Volume</th><th>Effort</th></tr>
+              </thead>
+              <tbody>
+                {sessions.map((w) => {
+                  const rpe = avgRpe(w);
+                  const minutes = durationMinutes(w);
+                  const volume = workoutVolume(w);
+                  return (
+                    <tr key={w.id}>
+                      <td className="strong">{workoutName(w)}</td>
+                      <td>{formatCompact(toDate(w.finished_at))}</td>
+                      <td>{minutes ? `${minutes} min` : '—'}</td>
+                      <td>{volume ? fmtVolume(volume, units) : '—'}</td>
+                      <td>{rpe != null ? `RPE ${rpe}` : '—'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </section>
 
         <div className="col-right">
           <h3 className="section-title">Your progress</h3>
           <div className="stats">
             <div className="panel stat">
-              <p className="stat__value stat__value--accent">+12%</p>
+              <p className={`stat__value${change != null && change >= 0 ? ' stat__value--accent' : ''}`}>
+                {change == null ? '—' : `${change >= 0 ? '+' : ''}${change}%`}
+              </p>
               <p className="stat__label">Volume vs last week</p>
             </div>
             <div className="panel stat">
-              <p className="stat__value">4 days</p>
+              <p className="stat__value">{streak} day{streak === 1 ? '' : 's'}</p>
               <p className="stat__label">Training streak</p>
             </div>
           </div>
           <section className="panel">
             <h3 className="panel__title">Weekly volume</h3>
-            <p className="panel__sub">Last 6 weeks</p>
+            <p className="panel__sub">Last 6 weeks · completed sets</p>
             <div className="bars">
-              {VOLUME.map((v, i) => (
-                <div key={i} className="bars__col">
-                  <div className={`bar${i === VOLUME.length - 1 ? ' bar--accent' : ''}`} style={{ height: `${v}%` }} />
-                  <span>W{i + 1}</span>
+              {weeks.map((w, i) => (
+                <div key={w.label} className="bars__col">
+                  <div
+                    className={`bar${i === weeks.length - 1 ? ' bar--accent' : ''}`}
+                    style={{ height: `${Math.max(2, (w.value / max) * 100)}%` }}
+                    title={fmtVolume(w.value, units)}
+                  />
+                  <span>{w.label}</span>
                 </div>
               ))}
             </div>

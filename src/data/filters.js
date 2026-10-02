@@ -1,23 +1,32 @@
-export const PRIMARY = ['Soccer', 'Basketball', 'Running', 'Swimming', 'Cycling', 'None'];
-export const SECONDARY = ['Strength', 'Hypertrophy', 'Endurance', 'Mobility', 'Fat loss'];
+// UI vocabulary for the Filters page. Each choice is stored as a backend `user_filters` row (see api/filters.js).
+export const SPORTS = ['Soccer', 'Basketball', 'Running', 'Swimming', 'Cycling', 'Tennis', 'None'];
+export const FOCUSES = ['Strength', 'Hypertrophy', 'Endurance', 'Mobility', 'Fat loss'];
 export const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export const LENGTHS = [30, 45, 60, 90];
 export const MUSCLES = ['Legs', 'Glutes', 'Core', 'Back', 'Chest', 'Shoulders', 'Arms', 'Calves'];
-export const MACHINES = [
-  'Squat rack', 'Leg press', 'Smith machine', 'Dumbbells', 'Barbell & plates', 'Lying leg curl',
-  'Leg extension', 'Lat pulldown', 'Cable machine', 'Kettlebells', 'Treadmill', 'Plyo box',
+
+// Must match the backend's exercises.equipment / equipment-filter vocabulary exactly.
+export const EQUIPMENT = [
+  ['barbell', 'Barbell & plates'],
+  ['dumbbell', 'Dumbbells'],
+  ['kettlebell', 'Kettlebells'],
+  ['machine', 'Machines'],
+  ['cable', 'Cable machine'],
+  ['band', 'Resistance bands'],
+  ['bodyweight', 'Bodyweight'],
+  ['other', 'Other'],
 ];
+export const EQUIPMENT_LABEL = Object.fromEntries(EQUIPMENT);
+
+// Backend filter types without a dedicated control; shown in "Other notes".
+export const EXTRA_TYPES = [
+  ['venue', 'Venue'],
+  ['benchmark', 'Benchmark'],
+  ['weight_goal', 'Weight goal'],
+  ['training_component', 'Training'],
+  ['schedule', 'Schedule'],
+  ['sport', 'Sport'],
+];
+export const TYPE_LABEL = { ...Object.fromEntries(EXTRA_TYPES), injury: 'Injury', equipment: 'Equipment' };
 
 export const INTENSITY_LABELS = ['', 'Easy', 'Easy', 'Light', 'Light', 'Moderate', 'Moderate', 'Hard', 'Hard', 'Very hard', 'Max'];
-
-export const DEFAULT_FILTERS = {
-  primary: 'Soccer',
-  secondary: 'Strength',
-  days: ['Mon', 'Tue', 'Thu', 'Fri', 'Sat'],
-  length: 45,
-  intensity: 7,
-  muscles: ['Legs', 'Glutes', 'Core'],
-  machines: MACHINES.filter((m) => m !== 'Cable machine' && m !== 'Kettlebells'),
-  avoid: ['Conventional deadlift', 'Overhead press'],
-  allMachines: MACHINES,
-};

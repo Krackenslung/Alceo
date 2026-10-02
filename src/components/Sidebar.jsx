@@ -9,7 +9,7 @@ const ITEMS = [
 ];
 
 export default function Sidebar({ active, onChange }) {
-  const { generateNextWeek } = useApp();
+  const { generate, generating } = useApp();
   return (
     <aside className="sidebar">
       <div className="logo">
@@ -28,9 +28,9 @@ export default function Sidebar({ active, onChange }) {
           </button>
         ))}
       </nav>
-      <button className="sidebar__promo" onClick={generateNextWeek}>
-        <p className="promo__title">✦ Generate next week</p>
-        <p className="promo__text">Let AI build your plan from this week’s results.</p>
+      <button className="sidebar__promo" onClick={() => generate({ navigate: true })} disabled={generating}>
+        <p className="promo__title">{generating ? 'Generating…' : '✦ Generate next workout'}</p>
+        <p className="promo__text">AI builds it from your filters, profile and recent sessions.</p>
       </button>
     </aside>
   );

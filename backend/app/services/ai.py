@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from collections.abc import Callable
 from datetime import date
 from typing import Any
@@ -24,19 +25,37 @@ ModelCaller = Callable[[str, str, str, str], str]
 RECENT_WORKOUTS = 5
 
 
-def call_gemini(system_prompt: str, user_prompt: str, model: str, api_key: str) -> str:
+RETRYABLE_STATUS = {429, 500, 503}
+RETRY_DELAYS_SECONDS = (2, 5)
+
+
+def call_gemini(
+    system_prompt: str, user_prompt: str, model: str, api_key: str, sleep: Callable[[float], None] = time.sleep
+) -> str:
     from google import genai
-    from google.genai import types
+    from google.genai import errors, types
 
     client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(
-        model=model,
-        contents=[types.Content(role="user", parts=[types.Part(text=user_prompt)])],
-        config=types.GenerateContentConfig(
-            system_instruction=system_prompt,
-            response_mime_type="application/json",
-        ),
-    )
+    for attempt in range(len(RETRY_DELAYS_SECONDS) + 1):
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=[types.Content(role="user", parts=[types.Part(text=user_prompt)])],
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    response_mime_type="application/json",
+                ),
+            )
+            break
+        except errors.APIError as exc:
+            if exc.code not in RETRYABLE_STATUS:
+                raise
+            if attempt == len(RETRY_DELAYS_SECONDS):
+                raise AiResponseError(
+                    f"Gemini is busy right now ({exc.code}). Please try again in a minute."
+                ) from exc
+            logger.info("Gemini returned %s, retrying (attempt %s)", exc.code, attempt + 2)
+            sleep(RETRY_DELAYS_SECONDS[attempt])
     if not response.text:
         raise AiResponseError("Gemini returned an empty reply.")
     return response.text

@@ -24,16 +24,6 @@ export function usePersistentState(key, initial) {
   return [value, setValue];
 }
 
-export const clearPersisted = () => {
-  try {
-    Object.keys(localStorage)
-      .filter((k) => k.startsWith('alceo:'))
-      .forEach((k) => localStorage.removeItem(k));
-  } catch {
-    /* ignore */
-  }
-};
-
 export const downloadFile = (filename, text, type = 'text/csv') => {
   const url = URL.createObjectURL(new Blob([text], { type }));
   const a = document.createElement('a');

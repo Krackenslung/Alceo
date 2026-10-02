@@ -1,78 +1,105 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Chip from '../components/Chip.jsx';
 import TopActions from '../components/TopActions.jsx';
 import { useApp } from '../AppContext.jsx';
-import { addDays, formatRange, getWeek } from '../utils/dates.js';
 import {
-  DAYS, DEFAULT_FILTERS, INTENSITY_LABELS, LENGTHS, MUSCLES, PRIMARY, SECONDARY,
+  DAYS, EQUIPMENT, EQUIPMENT_LABEL, EXTRA_TYPES, FOCUSES, INTENSITY_LABELS, LENGTHS, MUSCLES, SPORTS, TYPE_LABEL,
 } from '../data/filters.js';
+import { displayToKg, kgToDisplay } from '../lib/units.js';
 
 const toggle = (list, item) => (list.includes(item) ? list.filter((x) => x !== item) : [...list, item]);
 
-export default function Filters({ filters, setFilters }) {
-  const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState('');
-  const [applied, setApplied] = useState(false);
-  const [target, setTarget] = useState('next');
-  const [addingMachine, setAddingMachine] = useState(false);
-  const [machineDraft, setMachineDraft] = useState('');
-  const { today, weekStart, generateWeek } = useApp();
-  const targetDate = addDays(today, target === 'next' ? 7 : 0);
-  const targetRange = formatRange(getWeek(targetDate, weekStart));
-  const MACHINES = filters.allMachines;
-  const set = (patch) => {
-    setApplied(false);
-    setFilters((f) => ({ ...f, ...patch }));
-  };
-
-  const addAvoid = (e) => {
+function TextAdder({ placeholder, onAdd, label }) {
+  const [draft, setDraft] = useState(null);
+  const submit = (e) => {
     e.preventDefault();
-    const name = draft.trim();
-    if (name && !filters.avoid.includes(name)) set({ avoid: [...filters.avoid, name] });
-    setDraft('');
-    setAdding(false);
+    const text = (draft ?? '').trim();
+    if (text) onAdd(text.slice(0, 255));
+    setDraft(null);
   };
+  if (draft === null) return <button className="link" onClick={() => setDraft('')}>{label}</button>;
+  return (
+    <form onSubmit={submit}>
+      <input className="avoid__input" autoFocus maxLength={255} value={draft} placeholder={placeholder} onChange={(e) => setDraft(e.target.value)} onBlur={submit} />
+    </form>
+  );
+}
 
-  const addMachine = (e) => {
+function ExtraAdder({ onAdd }) {
+  const [draft, setDraft] = useState(null);
+  if (draft === null) return <button className="link link--pad" onClick={() => setDraft({ filter_type: 'venue', description: '' })}>+ Add note</button>;
+  const submit = (e) => {
     e.preventDefault();
-    const name = machineDraft.trim();
-    if (name && !MACHINES.some((m) => m.toLowerCase() === name.toLowerCase())) {
-      set({ allMachines: [...MACHINES, name], machines: [...filters.machines, name] });
+    if (draft.description.trim()) onAdd({ ...draft, description: draft.description.trim(), value_num: null, unit: null });
+    setDraft(null);
+  };
+  return (
+    <form className="picker picker--tight" onSubmit={submit}>
+      <select value={draft.filter_type} onChange={(e) => setDraft({ ...draft, filter_type: e.target.value })}>
+        {EXTRA_TYPES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+      </select>
+      <input autoFocus maxLength={255} placeholder="e.g. home gym, 5 km in 24:10" value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
+      <button className="btn btn--lime" type="submit">Add</button>
+      <button className="select" type="button" onClick={() => setDraft(null)}>Cancel</button>
+    </form>
+  );
+}
+
+export default function Filters() {
+  const { filters: saved, saveFilters, generate, generating, units, toast } = useApp();
+  const [draft, setDraft] = useState(saved);
+  const [busy, setBusy] = useState(false);
+  const [targetText, setTargetText] = useState('');
+  useEffect(() => {
+    setDraft(saved);
+    setTargetText(saved.weightTarget == null ? '' : String(kgToDisplay(saved.weightTarget, units)));
+  }, [saved, units]);
+
+  const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
+  const set = (patch) => setDraft((f) => ({ ...f, ...patch }));
+
+  const save = async ({ thenGenerate = false } = {}) => {
+    setBusy(true);
+    try {
+      if (dirty) await saveFilters(draft);
+      if (thenGenerate) generate({ navigate: true });
+      else toast('Filters saved');
+    } catch (e) {
+      toast(e.message);
+    } finally {
+      setBusy(false);
     }
-    setMachineDraft('');
-    setAddingMachine(false);
   };
 
-  const apply = () => {
-    generateWeek(targetDate, { navigate: true });
-    setApplied(true);
-  };
-
-  const allSelected = filters.machines.length === MACHINES.length;
-  const sports = [filters.primary !== 'None' && filters.primary, filters.secondary].filter(Boolean).join(' + ');
+  const intensity = draft.intensity ?? 7;
+  const allEquipment = draft.equipment.length === EQUIPMENT.length;
 
   return (
     <main className="main">
       <header className="topbar">
         <div>
-          <p className="topbar__date">The AI builds your weekly plan from these settings</p>
+          <p className="topbar__date">The AI reads these every time it builds a workout</p>
           <h1 className="topbar__title">Filters</h1>
         </div>
         <TopActions />
       </header>
 
       <div className="toolbar">
-        <label className="select select--field">
-          Applies to:
-          <select value={target} onChange={(e) => setTarget(e.target.value)}>
-            <option value="next">Next week · {formatRange(getWeek(addDays(today, 7), weekStart))}</option>
-            <option value="this">This week · {formatRange(getWeek(today, weekStart))}</option>
-          </select>
-        </label>
+        <p className="muted">{dirty ? 'You have unsaved changes.' : 'All changes saved.'}</p>
         <div className="toolbar__left">
-          <button className="select" onClick={() => { setFilters(DEFAULT_FILTERS); setApplied(false); }}>Reset</button>
-          <button className="btn btn--lime" onClick={apply}>
-            {applied ? '✓ Plan generated' : '✦ Apply & generate plan'}
+          <button
+            className="select"
+            disabled={!dirty || busy}
+            onClick={() => {
+              setDraft(saved);
+              setTargetText(saved.weightTarget == null ? '' : String(kgToDisplay(saved.weightTarget, units)));
+            }}
+          >
+            Discard
+          </button>
+          <button className="btn btn--ghost" disabled={!dirty || busy} onClick={() => save()}>Save</button>
+          <button className="btn btn--lime" disabled={busy || generating} onClick={() => save({ thenGenerate: true })}>
+            {generating ? 'Generating…' : dirty ? '✦ Save & generate workout' : '✦ Generate workout'}
           </button>
         </div>
       </div>
@@ -81,17 +108,17 @@ export default function Filters({ filters, setFilters }) {
         <div className="filters__col">
           <section className="panel">
             <h3 className="panel__title">Sport focus</h3>
-            <p className="panel__sub">What you’re training for this week</p>
-            <p className="flabel">PRIMARY · pick one</p>
+            <p className="panel__sub">What you’re training for</p>
+            <p className="flabel">SPORT · pick one</p>
             <div className="chips">
-              {PRIMARY.map((s) => (
-                <Chip key={s} active={filters.primary === s} onClick={() => set({ primary: s })}>{s}</Chip>
+              {SPORTS.map((s) => (
+                <Chip key={s} active={draft.sport === s} onClick={() => set({ sport: s })}>{s}</Chip>
               ))}
             </div>
-            <p className="flabel">SECONDARY · pick one</p>
+            <p className="flabel">TRAINING FOCUS · pick one</p>
             <div className="chips">
-              {SECONDARY.map((s) => (
-                <Chip key={s} active={filters.secondary === s} onClick={() => set({ secondary: s })}>{s}</Chip>
+              {FOCUSES.map((s) => (
+                <Chip key={s} active={draft.focus === s} onClick={() => set({ focus: draft.focus === s ? null : s })}>{s}</Chip>
               ))}
             </div>
           </section>
@@ -101,27 +128,34 @@ export default function Filters({ filters, setFilters }) {
             <p className="flabel">TRAINING DAYS</p>
             <div className="days">
               {DAYS.map((d) => (
-                <Chip key={d} active={filters.days.includes(d)} onClick={() => set({ days: toggle(filters.days, d) })}>{d}</Chip>
+                <Chip key={d} active={draft.days.includes(d)} onClick={() => set({ days: DAYS.filter((x) => toggle(draft.days, d).includes(x)) })}>{d}</Chip>
               ))}
             </div>
             <p className="flabel">SESSION LENGTH</p>
             <div className="chips">
               {LENGTHS.map((l) => (
-                <Chip key={l} active={filters.length === l} onClick={() => set({ length: l })}>{l} min</Chip>
+                <Chip key={l} active={draft.length === l} onClick={() => set({ length: draft.length === l ? null : l })}>{l} min</Chip>
               ))}
             </div>
             <div className="flabel flabel--row">
-              <span>INTENSITY</span>
-              <span className="accent">{filters.intensity} / 10 · {INTENSITY_LABELS[filters.intensity]}</span>
+              <span>INTENSITY (RPE)</span>
+              {draft.intensity == null ? (
+                <span className="muted">Not set · move the slider</span>
+              ) : (
+                <span className="accent">
+                  {draft.intensity} / 10 · {INTENSITY_LABELS[Math.round(draft.intensity)]}{' '}
+                  <button className="link" onClick={() => set({ intensity: null })}>clear</button>
+                </span>
+              )}
             </div>
             <input
               className="slider"
               type="range"
               min="1"
               max="10"
-              value={filters.intensity}
+              value={intensity}
               aria-label="Intensity"
-              style={{ '--pct': `${((filters.intensity - 1) / 9) * 100}%` }}
+              style={{ '--pct': draft.intensity == null ? '0%' : `${((intensity - 1) / 9) * 100}%` }}
               onChange={(e) => set({ intensity: Number(e.target.value) })}
             />
             <div className="slider__ends"><span>Easy</span><span>Max</span></div>
@@ -129,11 +163,35 @@ export default function Filters({ filters, setFilters }) {
 
           <section className="panel">
             <h3 className="panel__title">Muscle priorities</h3>
-            <p className="panel__sub">Get more volume this week</p>
+            <p className="panel__sub">Muscles to give more volume</p>
             <div className="chips chips--top">
               {MUSCLES.map((m) => (
-                <Chip key={m} active={filters.muscles.includes(m)} onClick={() => set({ muscles: toggle(filters.muscles, m) })}>{m}</Chip>
+                <Chip key={m} active={draft.muscles.includes(m)} onClick={() => set({ muscles: toggle(draft.muscles, m) })}>{m}</Chip>
               ))}
+            </div>
+          </section>
+
+          <section className="panel">
+            <h3 className="panel__title">Weight goal</h3>
+            <p className="panel__sub">Target body weight</p>
+            <div className="pgrid">
+              <label className="pfield">
+                <span className="pfield__label">Target</span>
+                <div className="unit">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.1"
+                    min="0"
+                    value={targetText}
+                    onChange={(e) => {
+                      setTargetText(e.target.value);
+                      set({ weightTarget: displayToKg(e.target.value, units) });
+                    }}
+                  />
+                  <span>{units}</span>
+                </div>
+              </label>
             </div>
           </section>
         </div>
@@ -142,82 +200,82 @@ export default function Filters({ filters, setFilters }) {
           <section className="panel">
             <div className="panel__head">
               <div>
-                <h3 className="panel__title">Available machines</h3>
-                <p className="panel__sub">Only these will be used in your plan</p>
+                <h3 className="panel__title">Available equipment</h3>
+                <p className="panel__sub">
+                  {draft.equipment.length ? 'The AI only uses exercises for this equipment' : 'None selected: the AI may use any equipment'}
+                </p>
               </div>
-              <button className="link" onClick={() => set({ machines: allSelected ? [] : [...MACHINES] })}>
-                {allSelected ? 'Clear all' : 'Select all'}
+              <button className="link" onClick={() => set({ equipment: allEquipment ? [] : EQUIPMENT.map(([id]) => id) })}>
+                {allEquipment ? 'Clear all' : 'Select all'}
               </button>
             </div>
             <div className="machines">
-              {MACHINES.map((m) => {
-                const on = filters.machines.includes(m);
+              {EQUIPMENT.map(([id, label]) => {
+                const on = draft.equipment.includes(id);
                 return (
-                  <button
-                    key={m}
-                    className={`machine${on ? ' machine--on' : ''}`}
-                    aria-pressed={on}
-                    onClick={() => set({ machines: toggle(filters.machines, m) })}
-                  >
+                  <button key={id} className={`machine${on ? ' machine--on' : ''}`} aria-pressed={on} onClick={() => set({ equipment: toggle(draft.equipment, id) })}>
                     <span className="machine__box">{on && '✓'}</span>
-                    {m}
+                    {label}
                   </button>
                 );
               })}
             </div>
-            {addingMachine ? (
-              <form onSubmit={addMachine} className="link--pad">
-                <input
-                  className="avoid__input"
-                  autoFocus
-                  value={machineDraft}
-                  placeholder="Machine name"
-                  onChange={(e) => setMachineDraft(e.target.value)}
-                  onBlur={addMachine}
-                />
-              </form>
-            ) : (
-              <button className="link link--pad" onClick={() => setAddingMachine(true)}>+ Add machine</button>
-            )}
           </section>
 
           <section className="panel">
-            <h3 className="panel__title">Exercises to avoid</h3>
-            <p className="panel__sub">The AI won’t include these</p>
+            <h3 className="panel__title">Injuries</h3>
+            <p className="panel__sub">The AI avoids loading these areas</p>
             <div className="chips chips--top">
-              {filters.avoid.map((a) => (
+              {draft.injuries.map((a) => (
                 <span key={a} className="avoid">
                   {a}
-                  <button aria-label={`Remove ${a}`} onClick={() => set({ avoid: filters.avoid.filter((x) => x !== a) })}>×</button>
+                  <button aria-label={`Remove ${a}`} onClick={() => set({ injuries: draft.injuries.filter((x) => x !== a) })}>×</button>
                 </span>
               ))}
-              {adding ? (
-                <form onSubmit={addAvoid}>
-                  <input
-                    className="avoid__input"
-                    autoFocus
-                    value={draft}
-                    placeholder="Exercise name"
-                    onChange={(e) => setDraft(e.target.value)}
-                    onBlur={addAvoid}
-                  />
-                </form>
-              ) : (
-                <button className="link" onClick={() => setAdding(true)}>+ Add exercise</button>
-              )}
+              <TextAdder
+                label="+ Add injury"
+                placeholder="e.g. left knee, avoid deep squats"
+                onAdd={(text) => !draft.injuries.some((x) => x.toLowerCase() === text.toLowerCase()) && set({ injuries: [...draft.injuries, text] })}
+              />
             </div>
           </section>
 
+          <section className="panel">
+            <h3 className="panel__title">Other notes</h3>
+            <p className="panel__sub">Venue, benchmarks and anything else the AI should know</p>
+            {draft.extras.length > 0 && (
+              <ul className="prefs prefs--top">
+                {draft.extras.map((x, i) => (
+                  <li key={`${x.filter_type}-${x.description}`}>
+                    <div>
+                      <strong>{TYPE_LABEL[x.filter_type] ?? x.filter_type}</strong>
+                      <p className="muted">{x.description}{x.value_num != null ? ` · ${x.value_num}${x.unit ? ` ${x.unit}` : ''}` : ''}</p>
+                    </div>
+                    <button className="row-x" aria-label={`Remove ${x.description}`} onClick={() => set({ extras: draft.extras.filter((_, j) => j !== i) })}>×</button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <ExtraAdder
+              onAdd={(row) => !draft.extras.some((x) => x.filter_type === row.filter_type && x.description.toLowerCase() === row.description.toLowerCase())
+                && set({ extras: [...draft.extras, row] })}
+            />
+          </section>
+
           <section className="preview">
-            <p className="preview__eyebrow">NEXT WEEK PREVIEW</p>
+            <p className="preview__eyebrow">THE AI WILL USE</p>
             <h3 className="preview__title">
-              {filters.days.length} sessions · ~{filters.length} min each
+              {draft.days.length ? `${draft.days.length} days a week` : 'Any day'}{draft.length ? ` · ~${draft.length} min` : ''}
             </h3>
             <div className="preview__tags">
-              {sports && <span className="tag">{sports}</span>}
-              <span className="tag">Intensity {filters.intensity}/10</span>
-              {filters.muscles.length > 0 && <span className="tag">{filters.muscles.join(' · ')}</span>}
-              <span className="tag">{filters.machines.length} machines</span>
+              {draft.sport !== 'None' && <span className="tag">{draft.sport}</span>}
+              {draft.focus && <span className="tag">{draft.focus}</span>}
+              {draft.intensity != null && <span className="tag">RPE {draft.intensity}/10</span>}
+              {draft.muscles.length > 0 && <span className="tag">{draft.muscles.join(' · ')}</span>}
+              <span className="tag">
+                {draft.equipment.length ? draft.equipment.map((e) => EQUIPMENT_LABEL[e]).join(', ') : 'Any equipment'}
+              </span>
+              {draft.injuries.length > 0 && <span className="tag">{draft.injuries.length} injur{draft.injuries.length === 1 ? 'y' : 'ies'}</span>}
             </div>
           </section>
         </div>

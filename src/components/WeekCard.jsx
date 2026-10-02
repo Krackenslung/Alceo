@@ -1,34 +1,33 @@
 import { useApp } from '../AppContext.jsx';
+import { toDate } from '../lib/workouts.js';
 import { DAY_LETTER, getWeek, isSameDay, ymd } from '../utils/dates.js';
 
-export default function WeekCard({ today, selectedDate, onSelect }) {
-  const { weekStart, resolve, history } = useApp();
+export default function WeekCard() {
+  const { today, weekStart, history, filters } = useApp();
   const week = getWeek(today, weekStart);
-  const completed = new Set(history.map((h) => h.dateKey).filter(Boolean));
-  const planned = week.filter((d) => resolve(d));
-  const isDone = (d) => resolve(d) && (completed.has(ymd(d)) || (d < today && !isSameDay(d, today)));
-  const done = planned.filter(isDone).length;
+  const doneDays = new Set(history.map((w) => ymd(toDate(w.finished_at))));
+  const done = week.filter((d) => doneDays.has(ymd(d))).length;
+  const target = filters.days.length;
 
   return (
     <section className="panel">
       <h3 className="panel__title">This week</h3>
-      <p className="panel__sub">{done} of {planned.length} sessions done</p>
+      <p className="panel__sub">
+        {target ? `${done} of ${target} planned training days done` : `${done} training day${done === 1 ? '' : 's'} so far`}
+      </p>
       <div className="week">
         {week.map((d) => {
+          const complete = doneDays.has(ymd(d));
           const isToday = isSameDay(d, today);
-          const selected = isSameDay(d, selectedDate);
-          const complete = isDone(d);
           return (
             <div key={d.toISOString()} className="week__col">
               <span className="week__letter">{DAY_LETTER[d.getDay()]}</span>
-              <button
-                className={`dot${complete ? ' dot--done' : ''}${isToday ? ' dot--today' : ''}${selected ? ' dot--selected' : ''}`}
-                onClick={() => onSelect(d)}
-                aria-pressed={selected}
-                aria-label={d.toDateString()}
+              <span
+                className={`dot${complete ? ' dot--done' : ''}${isToday ? ' dot--today' : ''}`}
+                aria-label={`${d.toDateString()}${complete ? ', trained' : ''}`}
               >
                 {complete ? '✓' : d.getDate()}
-              </button>
+              </span>
             </div>
           );
         })}
